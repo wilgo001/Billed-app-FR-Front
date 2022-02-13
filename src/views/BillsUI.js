@@ -20,6 +20,13 @@ const row = (bill) => {
   }
 
 const rows = (data) => {
+  if(data) {
+      data.sort((a, b) => {
+       const A = new Date(a.date);
+       const B = new Date(b.date);
+       return B.getTime() - A.getTime();
+    });
+  }
   return (data && data.length) ? data.map(bill => row(bill)).join("") : ""
 }
 
@@ -41,19 +48,17 @@ export default ({ data: bills, loading, error }) => {
       </div>
     </div>
   `)
-
   if (loading) {
     return LoadingPage()
   } else if (error) {
     return ErrorPage(error)
   }
-  
   return (`
     <div class='layout'>
       ${VerticalLayout(120)}
       <div class='content'>
         <div class='content-header'>
-          <div class='content-title'> Mes notes de frais </div>
+          <h1 class='content-title'>Mes notes de frais</h1>
           <button type="button" data-testid='btn-new-bill' class="btn btn-primary">Nouvelle note de frais</button>
         </div>
         <div id="data-table">

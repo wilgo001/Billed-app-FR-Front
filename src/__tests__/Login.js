@@ -52,8 +52,10 @@ describe("Given that I am a user on login page", () => {
     test("Then I should be identified as an Employee in app", () => {
       document.body.innerHTML = LoginUI();
       const inputData = {
+        type: "Employee",
         email: "johndoe@email.com",
         password: "azerty",
+        status: "connected",
       };
 
       const inputEmailUser = screen.getByTestId("employee-email-input");
@@ -112,7 +114,7 @@ describe("Given that I am a user on login page", () => {
     });
 
     test("It should renders Bills page", () => {
-      expect(screen.getAllByText("Mes notes de frais")).toBeTruthy();
+      expect(screen.queryByText("Mes notes de frais")).toBeTruthy();
     });
   });
 });
