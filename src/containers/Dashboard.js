@@ -144,9 +144,8 @@ export default class {
         .html("")
       this.counter ++
     }
-
     bills.forEach(bill => {
-      $(`#open-bill${bill.id}`).click((e) => this.handleEditTicket(e, bill, bills))
+      $(`#status-bills-container${this.index}`).find($(`#open-bill${bill.id}`)).click((e) => this.handleEditTicket(e, bill, bills))
     })
 
     return bills

@@ -9,15 +9,20 @@ import { ROUTES_PATH} from "../constants/routes.js";
 import {localStorageMock} from "../__mocks__/localStorage.js";
 
 import router from "../app/Router.js";
+import userEvent from "@testing-library/user-event";
+import Bills from "../containers/Bills.js";
+import store from "../__mocks__/store.js";
+import { formatDate, formatStatus } from "../app/format.js";
+import wrongStore from "../__mocks__/wrongStore.js";
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee'
+    }))
     test("Then bill icon in vertical layout should be highlighted", async () => {
 
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
-      window.localStorage.setItem('user', JSON.stringify({
-        type: 'Employee'
-      }))
       const root = document.createElement("div")
       root.setAttribute("id", "root")
       document.body.append(root)
@@ -25,7 +30,7 @@ describe("Given I am connected as an employee", () => {
       window.onNavigate(ROUTES_PATH.Bills)
       await waitFor(() => screen.getByTestId('icon-window'))
       const windowIcon = screen.getByTestId('icon-window')
-      //to-do write expect expression
+      expect(windowIcon.classList.toString()).toEqual('active-icon');
 
     })
     test("Then bills should be ordered from earliest to latest", () => {
@@ -34,6 +39,90 @@ describe("Given I am connected as an employee", () => {
       const antiChrono = (a, b) => ((a < b) ? 1 : -1)
       const datesSorted = [...dates].sort(antiChrono)
       expect(dates).toEqual(datesSorted)
+    })
+  })
+  describe("When I click on eye icon", () => {
+    test("then, it open a modal with the bill's proof", async () => {
+
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+
+      document.body.innerHTML = '';
+
+      const BILLS = new Bills({document: document, onNavigate: onNavigate, store: store, localStorage: window.localStorage});
+
+      store.bills().list().then(async snapshot => {
+        const attendedBills = snapshot
+          .map(doc => {
+            try {
+              return {
+                ...doc,
+                date: formatDate(doc.date),
+                status: formatStatus(doc.status),
+              }
+            } catch(e) {
+              // if for some reason, corrupted data was introduced, we manage here failing formatDate function
+              // log the error and return unformatted date in that case
+              console.log(e,'for',doc)
+              return {
+                ...doc,
+                date: doc.date,
+                status: formatStatus(doc.status)
+              }
+            }
+          })
+        BILLS.getBills().then(result => {
+          expect(result).toEqual(attendedBills);
+        });
+      })
+      
+      document.body.innerHTML = BillsUI({data: bills});
+
+      const iconEye = screen.getAllByTestId('icon-eye')[0];
+      expect(iconEye).toBeTruthy();
+
+
+      const handleClickIconEye = jest.fn((e) => BILLS.handleClickIconEye(iconEye));
+      iconEye.addEventListener('click', handleClickIconEye);
+      userEvent.click(iconEye);
+      expect(handleClickIconEye).toHaveBeenCalled();
+      expect(screen.getByAltText('Bill')).toBeTruthy();
+
+
+    })
+    test('enter catch on getBills', () => {
+
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+
+      const BILLS = new Bills({document: document, onNavigate: onNavigate, store: wrongStore, localStorage: window.localStorage});
+
+      wrongStore.bills().list().then(async snapshot => {
+        const attendedBills = snapshot
+          .map(doc => {
+            try {
+              return {
+                ...doc,
+                date: formatDate(doc.date),
+                status: formatStatus(doc.status),
+              }
+            } catch(e) {
+              // if for some reason, corrupted data was introduced, we manage here failing formatDate function
+              // log the error and return unformatted date in that case
+              console.log(e,'for',doc)
+              return {
+                ...doc,
+                date: doc.date,
+                status: formatStatus(doc.status)
+              }
+            }
+          })
+        BILLS.getBills().then(result => {
+          expect(result).toEqual(attendedBills);
+        });
+      })
     })
   })
 })

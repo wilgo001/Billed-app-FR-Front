@@ -9,7 +9,7 @@ const mockedBills = {
       "commentary": "séminaire billed",
       "name": "encore",
       "fileName": "preview-facture-free-201801-pdf-1.jpg",
-      "date": "2004-04-04",
+      "date": "wrongDate",
       "amount": 400,
       "commentAdmin": "ok",
       "email": "a@a",
@@ -73,10 +73,10 @@ const mockedBills = {
       "status": "pending",
       "type": "Hôtel et logement",
       "commentary": "séminaire billed",
-      "name": "new bill test",
+      "name": "encore",
       "fileName": "preview-facture-free-201801-pdf-1.jpg",
-      "date": "2004-04-04",
-      "amount": 256,
+      "date": "wrongDate",
+      "amount": 400,
       "commentAdmin": "ok",
       "email": "a@a",
       "pct": 20
@@ -90,4 +90,3 @@ export default {
     //return {}
   },
 }
-
