@@ -11,9 +11,11 @@ import {localStorageMock} from "../__mocks__/localStorage.js";
 import router from "../app/Router.js";
 import userEvent from "@testing-library/user-event";
 import Bills from "../containers/Bills.js";
-import store from "../__mocks__/store.js";
 import { formatDate, formatStatus } from "../app/format.js";
 import wrongStore from "../__mocks__/wrongStore.js";
+import mockStore from "../__mocks__/store.js";
+
+jest.mock('../app/Store', () => require('../__mocks__/store.js').default);
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
@@ -50,9 +52,9 @@ describe("Given I am connected as an employee", () => {
 
       document.body.innerHTML = '';
 
-      const BILLS = new Bills({document: document, onNavigate: onNavigate, store: store, localStorage: window.localStorage});
+      const BILLS = new Bills({document: document, onNavigate: onNavigate, store: mockStore, localStorage: window.localStorage});
 
-      store.bills().list().then(async snapshot => {
+      mockStore.bills().list().then(async snapshot => {
         const attendedBills = snapshot
           .map(doc => {
             try {
@@ -64,7 +66,6 @@ describe("Given I am connected as an employee", () => {
             } catch(e) {
               // if for some reason, corrupted data was introduced, we manage here failing formatDate function
               // log the error and return unformatted date in that case
-              console.log(e,'for',doc)
               return {
                 ...doc,
                 date: doc.date,
@@ -111,7 +112,6 @@ describe("Given I am connected as an employee", () => {
             } catch(e) {
               // if for some reason, corrupted data was introduced, we manage here failing formatDate function
               // log the error and return unformatted date in that case
-              console.log(e,'for',doc)
               return {
                 ...doc,
                 date: doc.date,
@@ -123,6 +123,52 @@ describe("Given I am connected as an employee", () => {
           expect(result).toEqual(attendedBills);
         });
       })
+    })
+  })
+  
+  describe('When an error occurs on API', () => {
+    beforeEach(() => {
+      jest.spyOn(mockStore, "bills")
+      Object.defineProperty(
+          window,
+          'localStorage',
+          { value: localStorageMock }
+      )
+      window.localStorage.setItem('user', JSON.stringify({
+        type: 'Employee',
+        email: "a@a"
+      }))
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.appendChild(root)
+      router()
+    })
+    test("fetches bills from an API and fails with 404 message error", async () => {
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 404"))
+          }
+        }})
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 404/)
+      expect(message).toBeTruthy()
+    })
+
+    test("fetches messages from an API and fails with 500 message error", async () => {
+
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 500"))
+          }
+        }})
+
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 500/)
+      expect(message).toBeTruthy()
     })
   })
 })

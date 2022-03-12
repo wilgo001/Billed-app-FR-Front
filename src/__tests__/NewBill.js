@@ -11,6 +11,10 @@ import BillsUI from "../views/BillsUI.js";
 import userEvent from "@testing-library/user-event";
 import { bills } from "../fixtures/bills.js";
 import { ROUTES } from "../constants/routes.js";
+import postStore from "../__mocks__/postStore.js";
+
+
+jest.mock('../app/Store', () => require('../__mocks__/postStore.js').default);
 
 
 describe("Given I am connected as an employee", () => {
@@ -33,10 +37,9 @@ describe("Given I am connected as an employee", () => {
     })
   });
   describe("When I am on NewBill Page", () => {
-
     const html = NewBillUI()
     document.body.innerHTML = html
-    const newBill = new NewBill({document : document, onNavigate: onNavigate, store: store, localStorage: window.localStorage});
+    const newBill = new NewBill({document : document, onNavigate: onNavigate, store: postStore, localStorage: window.localStorage});
 
     window.localStorage.setItem("user",
     JSON.stringify({
@@ -45,6 +48,7 @@ describe("Given I am connected as an employee", () => {
       password: "azerty",
       status: "connected",
     }));
+
 
     test("Then I shouldn't be able to set file other than images", () => {
       const handleChangeFile = jest.fn((e)=> newBill.handleChangeFile(e));
@@ -66,7 +70,9 @@ describe("Given I am connected as an employee", () => {
       expect(changeFile.files[0].name).toBe('https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg');
     })
 
-    test("Then I should be able to submit", () => {
+    test("Then I should be able to submit", async () => {
+      let updateMock = jest.spyOn(postStore.bills(), 'update');
+
       const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
       const submit = screen.getByTestId('form-new-bill');
       submit.addEventListener('submit', handleSubmit);
@@ -89,16 +95,18 @@ describe("Given I am connected as an employee", () => {
 
 
       datePicker.value = dateValue;
-      console.log(datePicker.value);
 
       expect(datePicker.value).toBe(dateValue);
-
+      
 
       userEvent.click(screen.getByText('Envoyer'));
+
       expect(handleSubmit).toHaveBeenCalled();
       expect(screen.getByText('Mes notes de frais')).toBeTruthy();
-      // expect(screen.getByText(nameValue)).toBeTruthy();
-      // expect(screen.getByText(amountValue)).toBeTruthy();
+      expect(updateMock).toHaveBeenCalled();
+      let receveidUpdate = await updateMock.mock.results[0].value;
+      const excpectedUpdateValue = await postStore.bills().update();
+      expect(receveidUpdate).toStrictEqual(excpectedUpdateValue);
       
     })
   })
